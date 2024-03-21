@@ -89,7 +89,7 @@ def finish_transaction(payload, trx_id, fs, tss, client):
     payload["state"] = "FINISHED"
     response_json = make_call(url, "PUT", headers, payload)
     if response_json:
-        return response_json.get("qr_code_data")
+        return response_json, response_json.get("qr_code_data")
     else:
         return False
 
@@ -127,8 +127,10 @@ def sales_invoice_submit(self, method=None):
             fs = frappe.get_doc("Fiskaly Settings", "Fiskaly Settings")
             payload, trx_id = make_transaction(self, fs, tss, client)
             payload, trx_id = update_transaction(payload, trx_id, fs, tss, client)
-            qr_code_data = finish_transaction(payload, trx_id, fs, tss, client)
+            data, qr_code_data = finish_transaction(payload, trx_id, fs, tss, client)
+            self.custom_fiskaly_data = cstr(data)
             self.custom_qr_code_data = generate_qr_code(self.name, qr_code_data)
+            
 
 
 def authenticate_admin_tss(tss_id, tss_pin):
@@ -190,11 +192,12 @@ def company_validate(self, method=None):
 
 
 def pos_profile_validate(self, method=None):
-    if not self.custom_client_id:
-        frappe.throw("Client ID is Mandatory.")
-    tss_id = frappe.db.get_value(
-        "Company", self.company, "custom_technical_security_system_tss_id"
-    )
-    if not tss_id:
-        frappe.throw("TSS ID not Found in company.")
-    check_client(self.custom_client_id, tss_id)
+    # if not self.custom_client_id:
+    #     frappe.throw("Client ID is Mandatory.")
+    if self.custom_client_id:
+        tss_id = frappe.db.get_value(
+            "Company", self.company, "custom_technical_security_system_tss_id"
+        )
+        if not tss_id:
+            frappe.throw("TSS ID not Found in company.")
+        check_client(self.custom_client_id, tss_id)

@@ -46,3 +46,49 @@ def get_and_set_token(self=None):
             if save:
                 self.save()
             # headers["Authorization"] = f"Bearer {token}"
+
+
+@frappe.whitelist()
+def create_client_id(company):
+    if company:
+        tss_id, tss_pin = frappe.db.get_value(
+            "Company",
+            company,
+            ["custom_technical_security_system_tss_id", "custom_tss_pin"],
+        ) or [None, None]
+        if not tss_id:
+            frappe.throw("TSS ID not Found in company.")
+        self = frappe.get_doc("Fiskaly Settings", "Fiskaly Settings")
+        authenticate_admin(self, tss_id, tss_pin)
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.token}",
+        }
+        guid = uuid.uuid4()
+        url = f"{self.base_url}/tss/{tss_id}/client/{guid}"
+        payload = {"serial_number": f"ERS {guid}"}
+        response_json = make_call(url, "PUT", headers, payload)
+        if response_json:
+            # frappe.db.set_value("POS Profile", pos_profile, {"custom_client_id": response_json.get("_id")})
+            return response_json.get("_id")
+    return False
+
+
+# def update_client_id(self, client_id, tss_id, pos_profile):
+#     headers = {"Content-Type": "application/json", "Authorization": f'Bearer {self.token}'}
+#     payload = {"state": "REGISTERED"}
+
+#     url = f"{self.base_url}/tss/{tss_id}/client/{client_id}"
+#     response_json = make_call(url,"PATCH", headers, payload)
+#     if response_json:
+#         frappe.db.set_value("POS Profile", pos_profile, {"custom_client_id": })
+
+
+def authenticate_admin(self, tss_id, tss_pin):
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {self.token}",
+    }
+    url = f"{self.base_url}/tss/{tss_id}/admin/auth"
+    payload = {"admin_pin": tss_pin}
+    response_json = make_call(url, "POST", headers, payload)
