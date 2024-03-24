@@ -45,7 +45,6 @@ def get_and_set_token(self=None):
             self.token = token
             if save:
                 self.save()
-            # headers["Authorization"] = f"Bearer {token}"
 
 
 @frappe.whitelist()
@@ -69,19 +68,8 @@ def create_client_id(company):
         payload = {"serial_number": f"ERS {guid}"}
         response_json = make_call(url, "PUT", headers, payload)
         if response_json:
-            # frappe.db.set_value("POS Profile", pos_profile, {"custom_client_id": response_json.get("_id")})
             return response_json.get("_id")
     return False
-
-
-# def update_client_id(self, client_id, tss_id, pos_profile):
-#     headers = {"Content-Type": "application/json", "Authorization": f'Bearer {self.token}'}
-#     payload = {"state": "REGISTERED"}
-
-#     url = f"{self.base_url}/tss/{tss_id}/client/{client_id}"
-#     response_json = make_call(url,"PATCH", headers, payload)
-#     if response_json:
-#         frappe.db.set_value("POS Profile", pos_profile, {"custom_client_id": })
 
 
 def authenticate_admin(self, tss_id, tss_pin):
@@ -92,3 +80,34 @@ def authenticate_admin(self, tss_id, tss_pin):
     url = f"{self.base_url}/tss/{tss_id}/admin/auth"
     payload = {"admin_pin": tss_pin}
     response_json = make_call(url, "POST", headers, payload)
+
+@frappe.whitelist()
+def create_tss_id(admin_pin = "1234567890"):
+    self = frappe.get_doc("Fiskaly Settings", "Fiskaly Settings")
+    headers = {"Content-Type": "application/json", "Authorization": f'Bearer {self.token}'}
+    guid = uuid.uuid4()
+    url = f"{self.base_url}/tss/{guid}"
+    payload = {"metadata": {}}
+    response_json = make_call(url,"PUT", headers, payload)
+    if response_json:
+        personalize_tss_id(self, response_json.get("_id"), "UNINITIALIZED")
+        change_admin_pin(self, response_json.get("_id"), response_json.get("admin_puk"), admin_pin)
+        authenticate_admin(self, response_json.get("_id"), admin_pin)
+        personalize_tss_id(self, response_json.get("_id"), "INITIALIZED")
+        return response_json.get("_id")
+    return False
+
+def change_admin_pin(self, tss_id, admin_puk, admin_pin):
+    headers = {"Content-Type": "application/json", "Authorization": f'Bearer {self.token}'}
+    url = f"{self.base_url}/tss/{tss_id}/admin"
+    payload = {
+        "admin_puk": admin_puk,
+        "new_admin_pin": admin_pin
+    }
+    response_json = make_call(url,"PATCH", headers, payload)
+
+def personalize_tss_id(self, tss_id, state):
+    headers = {"Content-Type": "application/json", "Authorization": f'Bearer {self.token}'}
+    url = f"{self.base_url}/tss/{tss_id}"
+    payload = {"state": state}
+    response_json = make_call(url,"PATCH", headers, payload)

@@ -27,9 +27,10 @@ def make_transaction(si, fs, tss, client):
     url = f"{fs.base_url}/tss/{tss}/tx/{guid}?tx_revision=1"
 
     receipt = {}
+    vat_rate = frappe.db.get_value("Sales Taxes and Charges Template", si.taxes_and_charges, "custom_fiskaly_vat_title")
     receipt["receipt_type"] = "RECEIPT"
     receipt["amounts_per_vat_rate"] = [
-        {"vat_rate": "NORMAL", "amount": f'{flt(si.total_taxes_and_charges):.2f}'}
+        {"vat_rate": vat_rate, "amount": f'{flt(si.total_taxes_and_charges):.2f}'}
     ]
     amounts_per_payment_type = []
     mop = {}
@@ -181,19 +182,14 @@ def check_client(client_id, tss_id):
 
 
 def company_validate(self, method=None):
-    if not self.custom_technical_security_system_tss_id:
-        frappe.throw("TSS ID is Mandatory.")
-    if not self.custom_tss_pin:
-        frappe.throw("TSS PIN is Mandatory.")
-    check_tss(self.custom_technical_security_system_tss_id)
-    authenticate_admin_tss(
-        self.custom_technical_security_system_tss_id, self.custom_tss_pin
-    )
+    if self.custom_technical_security_system_tss_id:
+        check_tss(self.custom_technical_security_system_tss_id)
+        authenticate_admin_tss(
+            self.custom_technical_security_system_tss_id, self.custom_tss_pin
+        )
 
 
 def pos_profile_validate(self, method=None):
-    # if not self.custom_client_id:
-    #     frappe.throw("Client ID is Mandatory.")
     if self.custom_client_id:
         tss_id = frappe.db.get_value(
             "Company", self.company, "custom_technical_security_system_tss_id"
