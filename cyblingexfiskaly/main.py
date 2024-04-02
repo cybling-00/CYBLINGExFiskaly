@@ -17,6 +17,16 @@ def get_currency(account):
         currency = frappe.db.get_value("Company", company, "default_currency")
     return currency
 
+def get_custom_fiskaly_vat_title(account, company):
+    template = None
+    data = frappe.db.sql(f"""Select p.custom_fiskaly_vat_title 
+    From `tabItem Tax Template` p inner join `tabItem Tax Template Detail` c 
+    on p.name = c.parent where c.tax_type = '{account}' and p.company = '{company}' """)
+    if data:
+        template = data[0][0]
+    return template
+    
+    
 
 def make_transaction(si, fs, tss, client):
     headers = {
@@ -25,13 +35,16 @@ def make_transaction(si, fs, tss, client):
     }
     guid = uuid.uuid4()
     url = f"{fs.base_url}/tss/{tss}/tx/{guid}?tx_revision=1"
-
     receipt = {}
-    vat_rate = frappe.db.get_value("Sales Taxes and Charges Template", si.taxes_and_charges, "custom_fiskaly_vat_title")
     receipt["receipt_type"] = "RECEIPT"
-    receipt["amounts_per_vat_rate"] = [
-        {"vat_rate": vat_rate, "amount": f'{flt(si.total_taxes_and_charges):.2f}'}
-    ]
+    amounts_per_vat_rate = {}
+    for row in si.taxes:
+        template = get_custom_fiskaly_vat_title(row.account_head, si.company)
+        if template:
+            if template not in amounts_per_vat_rate:
+                amounts_per_vat_rate[template] = 0
+            amounts_per_vat_rate[template] += row.tax_amount
+    receipt["amounts_per_vat_rate"] = [{"vat_rate": vat_rate, "amount": f'{flt(amount):.2f}'} for vat_rate, amount in amounts_per_vat_rate.items()]
     amounts_per_payment_type = []
     mop = {}
     for p in si.payments:
