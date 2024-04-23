@@ -48,7 +48,7 @@ def make_transaction(si, fs, tss, client):
     amounts_per_payment_type = []
     mop = {}
     for p in si.payments:
-        if p.mode_of_payment == "Cash":
+        if p.type == "Cash":
             if "CASH" not in mop:
                 mop["CASH"] = 0
             mop["CASH"] += flt(p.amount)
