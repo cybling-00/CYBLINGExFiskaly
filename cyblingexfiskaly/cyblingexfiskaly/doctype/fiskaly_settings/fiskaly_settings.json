@@ -7,6 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "base_url",
+  "dsfinvk_base_url",
   "api_key",
   "api_secret",
   "column_break_c7azc",
@@ -42,12 +43,18 @@
    "fieldtype": "Text",
    "label": "Token",
    "read_only": 1
+  },
+  {
+   "fieldname": "dsfinvk_base_url",
+   "fieldtype": "Data",
+   "label": "DSFinV-K Base URL",
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-03-15 23:12:05.056339",
+ "modified": "2024-08-26 21:25:11.359329",
  "modified_by": "Administrator",
  "module": "CYBLINGExFISKALY",
  "name": "Fiskaly Settings",

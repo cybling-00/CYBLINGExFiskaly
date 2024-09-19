@@ -131,6 +131,11 @@ doc_events = {
     "POS Profile": {
         "validate": "cyblingexfiskaly.main.pos_profile_validate",
     },
+    "POS Closing Shift": {
+        "before_submit": "cyblingexfiskaly.main.pos_closing_shift_submit",
+        "on_cancel": "cyblingexfiskaly.main.pos_closing_shift_cancel",
+        "on_trash": "cyblingexfiskaly.main.pos_closing_shift_cancel",
+    },
 }
 
 # Scheduled Tasks

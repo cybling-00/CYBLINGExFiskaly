@@ -1,7 +1,0 @@
-## CYBLINGExFISKALY
-
-CYBLINGExFISKALY
-
-#### License
-
-MIT

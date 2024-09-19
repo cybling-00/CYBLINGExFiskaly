@@ -1,3 +1,0 @@
-changelog 23-04-2024
-
-- zahlart korrektur in fiskaly
